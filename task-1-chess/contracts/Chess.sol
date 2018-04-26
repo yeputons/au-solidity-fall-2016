@@ -11,6 +11,10 @@ contract Chess {
         black = black_;
         whitesTurnNext = true;
     }
+
+    function turnsCount() public view returns (uint) {
+        return turns.length;
+    }
     
     function makeTurn(bytes32 turn) public {
         if (whitesTurnNext) {
