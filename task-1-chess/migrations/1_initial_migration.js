@@ -1,5 +1,5 @@
-var Migrations = artifacts.require("./Migrations.sol");
+var Chess = artifacts.require("./Chess.sol");
 
 module.exports = function(deployer) {
-  deployer.deploy(Migrations);
+  deployer.deploy(Chess);
 };
