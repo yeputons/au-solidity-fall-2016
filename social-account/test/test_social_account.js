@@ -42,14 +42,14 @@ contract("SocialAccount", async (accounts) => {
     let acc2 = await SocialAccount.new("Name2");
     await acc1.addFriendWithAnyConnection(acc2.address);
 
-    let conn = SocialConnection.at(await acc1.connections(acc2.address));
-    assert.equal(await conn.initiator(), acc1.address);
-    assert.equal(await conn.acceptor(), acc2.address);
-    assert.equal(await conn.status(), PROPOSED);
+    let conn = SocialConnection.at(await acc1.connections.call(acc2.address));
+    assert.equal(await conn.initiator.call(), acc1.address);
+    assert.equal(await conn.acceptor.call(), acc2.address);
+    assert.equal(await conn.status.call(), PROPOSED);
 
     await acc2.addFriendWithAnyConnection(acc1.address);
-    assert.equal(await conn.status(), ACCEPTED);
-    assert.equal(await acc2.connections(acc1.address), conn.address);
+    assert.equal(await conn.status.call(), ACCEPTED);
+    assert.equal(await acc2.connections.call(acc1.address), conn.address);
   });
 
   [ACCEPTOR, INITIATOR].forEach(param => {
@@ -57,7 +57,7 @@ contract("SocialAccount", async (accounts) => {
       let acc1 = await SocialAccount.new("Name1");
       let acc2 = await SocialAccount.new("Name2");
       await acc1.addFriendWithAnyConnection(acc2.address);
-      let conn = SocialConnection.at(await acc1.connections(acc2.address));
+      let conn = SocialConnection.at(await acc1.connections.call(acc2.address));
       await acc2.addFriendWithAnyConnection(acc1.address);
 
       if (param == INITIATOR) {
@@ -68,19 +68,19 @@ contract("SocialAccount", async (accounts) => {
         assert.isTrue(false);
       }
 
-      assert.equal(await conn.status(), CANCELLED);
-      assert.oneOf(await acc1.connections(acc2.address), [ZERO_ADDRESS, conn.address]);
-      assert.oneOf(await acc2.connections(acc1.address), [ZERO_ADDRESS, conn.address]);
+      assert.equal(await conn.status.call(), CANCELLED);
+      assert.oneOf(await acc1.connections.call(acc2.address), [ZERO_ADDRESS, conn.address]);
+      assert.oneOf(await acc2.connections.call(acc1.address), [ZERO_ADDRESS, conn.address]);
 
       await acc1.addFriendWithAnyConnection(acc2.address);
-      let conn2 = SocialConnection.at(await acc1.connections(acc2.address));
-      assert.equal(await conn2.status(), PROPOSED);
+      let conn2 = SocialConnection.at(await acc1.connections.call(acc2.address));
+      assert.equal(await conn2.status.call(), PROPOSED);
 
       await acc2.addFriendWithAnyConnection(acc1.address);
-      assert.equal(await conn2.status(), ACCEPTED);
-      assert.equal(await acc1.connections(acc2.address), conn2.address);
-      assert.equal(await acc2.connections(acc1.address), conn2.address);
-      assert.equal(await conn.status(), CANCELLED);
+      assert.equal(await conn2.status.call(), ACCEPTED);
+      assert.equal(await acc1.connections.call(acc2.address), conn2.address);
+      assert.equal(await acc2.connections.call(acc1.address), conn2.address);
+      assert.equal(await conn.status.call(), CANCELLED);
     });
   });
 });
