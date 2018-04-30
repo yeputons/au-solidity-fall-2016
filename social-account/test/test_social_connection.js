@@ -2,35 +2,25 @@ var SocialAccount = artifacts.require("SocialAccount");
 var SocialConnection = artifacts.require("SocialConnection");
 
 contract("SocialConnection", async (accounts) => {
-  beforeEach(async () => {
-    this.acc1 = (await SocialAccount.new("First", {from: accounts[1]})).address;
-    this.acc2 = (await SocialAccount.new("Second", {from: accounts[2]})).address;
-  });
-
   it("should initialize correctly", async () => {
-    let conn = await SocialConnection.new(this.acc1, this.acc2, {from: accounts[1]});
-    assert.equal(await conn.initiator.call(), this.acc1);
-    assert.equal(await conn.acceptor.call(), this.acc2);
+    let conn = await SocialConnection.new(accounts[2], {from: accounts[1]});
+    assert.equal(await conn.initiator.call(), accounts[1]);
+    assert.equal(await conn.acceptor.call(), accounts[2]);
     assert.equal(await conn.accepted.call(), false);
   });
 
   it("can be accepted", async () => {
-    let conn = await SocialConnection.new(this.acc1, this.acc2, {from: accounts[1]});
+    let conn = await SocialConnection.new(accounts[2], {from: accounts[1]});
     await conn.accept({from: accounts[2]});
-    assert.equal(await conn.initiator.call(), this.acc1);
-    assert.equal(await conn.acceptor.call(), this.acc2);
+    assert.equal(await conn.initiator.call(), accounts[1]);
+    assert.equal(await conn.acceptor.call(), accounts[2]);
     assert.equal(await conn.accepted.call(), true);
   });
 
-  it("cannot be accepted by other person", async () => {
-    let conn = await SocialConnection.new(this.acc1, this.acc2, {from: accounts[1]});
+  it("cannot be accepted by other account", async () => {
+    let conn = await SocialConnection.new(accounts[2], {from: accounts[1]});
     await expectThrow(conn.accept({from: accounts[0]}));
     await expectThrow(conn.accept({from: accounts[1]}));
-  });
-
-  it("cannot be created by other person", async () => {
-    await expectThrow(SocialConnection.new(this.acc1, this.acc2, {from: accounts[0]}));
-    await expectThrow(SocialConnection.new(this.acc1, this.acc2, {from: accounts[2]}));
   });
 });
 
