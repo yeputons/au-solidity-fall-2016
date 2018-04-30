@@ -60,8 +60,8 @@ contract("SocialAccount", async (accounts) => {
       }
 
       assert.equal(await conn.status(), CANCELLED);
-      assert.equal(await acc1.connections(acc2.address), ZERO_ADDRESS);
-      assert.equal(await acc2.connections(acc1.address), ZERO_ADDRESS);
+      assert.oneOf(await acc1.connections(acc2.address), [ZERO_ADDRESS, conn.address]);
+      assert.oneOf(await acc2.connections(acc1.address), [ZERO_ADDRESS, conn.address]);
 
       await acc1.addFriendWithAnyConnection(acc2.address);
       let conn2 = SocialConnection.at(await acc1.connections(acc2.address));

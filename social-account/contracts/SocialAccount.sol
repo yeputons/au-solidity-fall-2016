@@ -27,7 +27,10 @@ contract SocialAccount {
     // what `SocialConnection` they accept and can check its code.
     function addFriend(SocialAccount other, SocialConnection connection) public {
         require(msg.sender == owner);
-        checkFriendRemoved(other);
+        if (connections[other] != SocialConnection(0) && connections[other].status() == SocialConnection.Status.CANCELLED) {
+            delete connections[other];
+        }
+        // There is neither pending request, nor accepted request.
         require(connections[other] == SocialConnection(0));
         if (connection == SocialConnection(0)) {
             connections[other] = new SocialConnection(other);
@@ -44,13 +47,11 @@ contract SocialAccount {
     // It may be unknown in advance because of either malicious `SocialAccount`
     // on the other end or frontrunning.
     function addFriendWithAnyConnection(SocialAccount other) external {
-        addFriend(other, other.connections(this));
-    }
-
-    function checkFriendRemoved(SocialAccount other) public {
-        if (connections[other] != SocialConnection(0) && connections[other].status() == SocialConnection.Status.CANCELLED) {
-            delete connections[other];
+        SocialConnection conn = other.connections(this);
+        if (conn != SocialConnection(0) && conn.status() == SocialConnection.Status.CANCELLED) {
+            conn = SocialConnection(0);
         }
+        addFriend(other, conn);
     }
 
     function removeFriend(SocialAccount other) external {
@@ -62,11 +63,6 @@ contract SocialAccount {
         conn.cancel();  // We assume that SocialConnection is safe.
         delete connections[other];
 
-        // Notify the other contract about friend removal, try to "safe push".
-        // This contract's `checkFriendRemoved`'s gas consumption is slightly
-        // below 8600, so there is some a margin.
-        if (!address(other).call.gas(10000)(bytes4(keccak256("checkFriendRemoved(address)")), this)) {
-          // It's more of a nice gesture than a necessity, so ignore all errors.
-        }
+        // Do not notify the other contract as it's extra external call and may be unsafe.
     }
 }
