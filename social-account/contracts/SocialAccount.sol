@@ -6,6 +6,8 @@ contract SocialAccount {
     string public name;
     address public owner;
 
+    event NameChanged(SocialAccount indexed account, string oldName, string newName);
+
     // Stores following connections:
     // 1. Initiated by me (owns such connections)
     // 2. Accepted by me
@@ -19,6 +21,7 @@ contract SocialAccount {
 
     function setName(string _name) public {
         require(msg.sender == owner);
+        emit NameChanged(this, name, _name);
         name = _name;
     }
 
