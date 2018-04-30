@@ -12,6 +12,24 @@ contract("SocialConnection", async (accounts) => {
     assert.equal(await conn.initiator.call(), accounts[1]);
     assert.equal(await conn.acceptor.call(), accounts[2]);
     assert.equal(await conn.status.call(), PROPOSED);
+
+    let logsPromise = new Promise(function(resolve, reject) {
+      let ev = conn.StatusUpdated({}, {fromBlock: 0, toBlock: 'latest'});
+      ev.get(function(error, logs) {
+        ev.stopWatching();
+        resolve(logs);
+      });
+    });
+    assert.web3Event({logs: await logsPromise}, {
+      event: 'StatusUpdated',
+      args: {
+        connection: conn.address,
+        from: accounts[1],
+        to: accounts[2],
+        oldStatus: PROPOSED,
+        newStatus: PROPOSED
+      },
+    });
   });
 
   it("can be accepted", async () => {
