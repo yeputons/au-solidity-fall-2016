@@ -1,3 +1,4 @@
+require("truffle-test-utils").init();
 var SocialAccount = artifacts.require("SocialAccount");
 var SocialConnection = artifacts.require("SocialConnection");
 
@@ -30,14 +31,34 @@ contract("SocialConnection", async (accounts) => {
 
   it("can be cancelled by initiator before acceptance", async () => {
     let conn = await SocialConnection.new(accounts[2], {from: accounts[1]});
-    await conn.cancel({from: accounts[1]});
+    let res = await conn.cancel({from: accounts[1]});
     assert.equal(await conn.status.call(), CANCELLED);
+    assert.web3Event(res, {
+      event: 'StatusUpdated',
+      args: {
+        connection: conn.address,
+        from: accounts[1],
+        to: accounts[2],
+        oldStatus: PROPOSED,
+        newStatus: CANCELLED
+      },
+    });
   });
 
   it("can be cancelled by acceptor before acceptance", async () => {
     let conn = await SocialConnection.new(accounts[2], {from: accounts[1]});
-    await conn.cancel({from: accounts[2]});
+    let res = await conn.cancel({from: accounts[2]});
     assert.equal(await conn.status.call(), CANCELLED);
+    assert.web3Event(res, {
+      event: 'StatusUpdated',
+      args: {
+        connection: conn.address,
+        from: accounts[1],
+        to: accounts[2],
+        oldStatus: PROPOSED,
+        newStatus: CANCELLED
+      },
+    });
   });
 
   it("cannot be cancelled by other accounts before acceptance", async () => {
@@ -49,15 +70,35 @@ contract("SocialConnection", async (accounts) => {
   it("can be cancelled by initator after acceptance", async () => {
     let conn = await SocialConnection.new(accounts[2], {from: accounts[1]});
     await conn.accept({from: accounts[2]});
-    await conn.cancel({from: accounts[1]});
+    let res = await conn.cancel({from: accounts[1]});
     assert.equal(await conn.status.call(), CANCELLED);
+    assert.web3Event(res, {
+      event: 'StatusUpdated',
+      args: {
+        connection: conn.address,
+        from: accounts[1],
+        to: accounts[2],
+        oldStatus: ACCEPTED,
+        newStatus: CANCELLED
+      },
+    });
   });
 
   it("can be cancelled by acceptor after acceptance", async () => {
     let conn = await SocialConnection.new(accounts[2], {from: accounts[1]});
     await conn.accept({from: accounts[2]});
-    await conn.cancel({from: accounts[2]});
+    let res = await conn.cancel({from: accounts[2]});
     assert.equal(await conn.status.call(), CANCELLED);
+    assert.web3Event(res, {
+      event: 'StatusUpdated',
+      args: {
+        connection: conn.address,
+        from: accounts[1],
+        to: accounts[2],
+        oldStatus: ACCEPTED,
+        newStatus: CANCELLED
+      },
+    });
   });
 
   it("cannot be cancelled by other accounts after acceptance", async () => {
