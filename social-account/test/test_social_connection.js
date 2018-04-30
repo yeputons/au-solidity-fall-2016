@@ -9,14 +9,36 @@ const CANCELLED = 2;
 contract("SocialConnection", async (accounts) => {
   it("should initialize correctly", async () => {
     let conn = await SocialConnection.new(accounts[2], {from: accounts[1]});
+    let res = await web3.eth.getTransactionReceipt(conn.transactionHash);
     assert.equal(await conn.initiator.call(), accounts[1]);
     assert.equal(await conn.acceptor.call(), accounts[2]);
     assert.equal(await conn.status.call(), PROPOSED);
+    assert.web3Event(res, {
+      event: 'StatusUpdated',
+      args: {
+        connection: conn.address,
+        from: accounts[1],
+        to: accounts[2],
+        oldStatus: PROPOSED,
+        newStatus: PROPOSED
+      },
+    });
   });
 
   it("can be accepted", async () => {
     let conn = await SocialConnection.new(accounts[2], {from: accounts[1]});
+    let res = await web3.eth.getTransactionReceipt(conn.transactionHash);
     await conn.accept({from: accounts[2]});
+    assert.web3Event(res, {
+      event: 'StatusUpdated',
+      args: {
+        connection: conn.address,
+        from: accounts[1],
+        to: accounts[2],
+        oldStatus: PROPOSED,
+        newStatus: ACCEPTED
+      },
+    });
     assert.equal(await conn.initiator.call(), accounts[1]);
     assert.equal(await conn.acceptor.call(), accounts[2]);
     assert.equal(await conn.status.call(), ACCEPTED);
