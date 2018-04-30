@@ -16,10 +16,20 @@ contract("SocialConnection", async (accounts) => {
 
   it("can be accepted", async () => {
     let conn = await SocialConnection.new(accounts[2], {from: accounts[1]});
-    await conn.accept({from: accounts[2]});
+    let res = await conn.accept({from: accounts[2]});
     assert.equal(await conn.initiator.call(), accounts[1]);
     assert.equal(await conn.acceptor.call(), accounts[2]);
     assert.equal(await conn.status.call(), ACCEPTED);
+    assert.web3Event(res, {
+      event: 'StatusUpdated',
+      args: {
+        connection: conn.address,
+        from: accounts[1],
+        to: accounts[2],
+        oldStatus: PROPOSED,
+        newStatus: ACCEPTED
+      },
+    });  
   });
 
   it("cannot be accepted by other account", async () => {
