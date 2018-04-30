@@ -27,6 +27,53 @@ contract("SocialConnection", async (accounts) => {
     await expectThrow(conn.accept({from: accounts[1]}));
     assert.equal(await conn.status.call(), PROPOSED);
   });
+
+  it("can be cancelled by initiator before acceptance", async () => {
+    let conn = await SocialConnection.new(accounts[2], {from: accounts[1]});
+    await conn.cancel({from: accounts[1]});
+    assert.equal(await conn.status.call(), CANCELLED);
+  });
+
+  it("can be cancelled by acceptor before acceptance", async () => {
+    let conn = await SocialConnection.new(accounts[2], {from: accounts[1]});
+    await conn.cancel({from: accounts[2]});
+    assert.equal(await conn.status.call(), CANCELLED);
+  });
+
+  it("cannot be cancelled by other accounts before acceptance", async () => {
+    let conn = await SocialConnection.new(accounts[2], {from: accounts[1]});
+    await expectThrow(conn.cancel({from: accounts[0]}));
+    assert.equal(await conn.status.call(), PROPOSED);
+  });
+
+  it("can be cancelled by initator after acceptance", async () => {
+    let conn = await SocialConnection.new(accounts[2], {from: accounts[1]});
+    await conn.accept({from: accounts[2]});
+    await conn.cancel({from: accounts[1]});
+    assert.equal(await conn.status.call(), CANCELLED);
+  });
+
+  it("can be cancelled by acceptor after acceptance", async () => {
+    let conn = await SocialConnection.new(accounts[2], {from: accounts[1]});
+    await conn.accept({from: accounts[2]});
+    await conn.cancel({from: accounts[2]});
+    assert.equal(await conn.status.call(), CANCELLED);
+  });
+
+  it("cannot be cancelled by other accounts after acceptance", async () => {
+    let conn = await SocialConnection.new(accounts[2], {from: accounts[1]});
+    await conn.accept({from: accounts[2]});
+    await expectThrow(conn.cancel({from: accounts[0]}));
+    assert.equal(await conn.status.call(), ACCEPTED);
+  });
+
+  it("cannot be accepted after cancelling", async () => {
+    let conn = await SocialConnection.new(accounts[2], {from: accounts[1]});
+    await conn.cancel({from: accounts[2]});
+    await expectThrow(conn.accept({from: accounts[2]}));
+    await expectThrow(conn.accept({from: accounts[1]}));
+    assert.equal(await conn.status.call(), CANCELLED);
+  });
 });
 
 // https://github.com/OpenZeppelin/zeppelin-solidity/blob/master/test/helpers/expectThrow.js
