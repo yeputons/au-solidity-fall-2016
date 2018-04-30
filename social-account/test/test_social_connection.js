@@ -1,12 +1,16 @@
 var SocialAccount = artifacts.require("SocialAccount");
 var SocialConnection = artifacts.require("SocialConnection");
 
+const PROPOSED = 0;
+const ACCEPTED = 1;
+const CANCELLED = 2;
+
 contract("SocialConnection", async (accounts) => {
   it("should initialize correctly", async () => {
     let conn = await SocialConnection.new(accounts[2], {from: accounts[1]});
     assert.equal(await conn.initiator.call(), accounts[1]);
     assert.equal(await conn.acceptor.call(), accounts[2]);
-    assert.equal(await conn.accepted.call(), false);
+    assert.equal(await conn.status.call(), PROPOSED);
   });
 
   it("can be accepted", async () => {
@@ -14,13 +18,14 @@ contract("SocialConnection", async (accounts) => {
     await conn.accept({from: accounts[2]});
     assert.equal(await conn.initiator.call(), accounts[1]);
     assert.equal(await conn.acceptor.call(), accounts[2]);
-    assert.equal(await conn.accepted.call(), true);
+    assert.equal(await conn.status.call(), ACCEPTED);
   });
 
   it("cannot be accepted by other account", async () => {
     let conn = await SocialConnection.new(accounts[2], {from: accounts[1]});
     await expectThrow(conn.accept({from: accounts[0]}));
     await expectThrow(conn.accept({from: accounts[1]}));
+    assert.equal(await conn.status.call(), PROPOSED);
   });
 });
 

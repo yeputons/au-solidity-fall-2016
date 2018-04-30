@@ -3,20 +3,23 @@ pragma solidity ^0.4.21;
 import "./SocialAccount.sol";
 
 contract SocialConnection {
+    enum Status { PROPOSED, ACCEPTED, CANCELLED }
+
     SocialAccount public initiator;
     SocialAccount public acceptor;
-    bool public accepted;
+    Status public status;
 
     constructor(SocialAccount _acceptor) public {
         require(msg.sender != address(_acceptor));
         initiator = SocialAccount(msg.sender);
         acceptor = _acceptor;
-        accepted = false;
+        status = Status.PROPOSED;
     }
 
     function accept() public {
         require(msg.sender == address(acceptor));
-        accepted = true;
+        require(status <= Status.ACCEPTED);
+        status = Status.ACCEPTED;
     }
 
     function cancel() public {
@@ -24,6 +27,6 @@ contract SocialConnection {
         // Do not notify either contract because external call may fail, thus
         // blocking friendship cancellation, which is no good.
         // "Favor pull over push".
-        selfdestruct(msg.sender);
+        status = Status.CANCELLED;
     }
 }
