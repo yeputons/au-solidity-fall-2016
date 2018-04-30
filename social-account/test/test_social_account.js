@@ -1,3 +1,4 @@
+require("truffle-test-utils").init();
 var SocialAccount = artifacts.require("SocialAccount");
 var SocialConnection = artifacts.require("SocialConnection");
 
@@ -19,8 +20,16 @@ contract("SocialAccount", async (accounts) => {
 
   it("allow name changes by owner", async () => {
     let acc = await SocialAccount.new("My Name");
-    await acc.setName("Other Name", {from: accounts[0]});
+    let res = await acc.setName("Other Name", {from: accounts[0]});
     assert.equal(await acc.name.call(), "Other Name");
+    assert.web3Event(res, {
+      event: 'NameChanged',
+      args: {
+        account: acc.address,
+        oldName: "My Name",
+        newName: "Other Name"
+      },
+    });
   });
 
   it("prohibits name changes by others", async () => {
