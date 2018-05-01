@@ -138,6 +138,39 @@ contract("SocialAccount", async (accounts) => {
 
     await expectThrow(acc.withdraw(40, {from: accounts[1]}));
   });
+
+  it("allows transfers to friends only", async () => {
+    let acc1 = await SocialAccount.new("Name1");
+    let acc2 = await SocialAccount.new("Name2");
+    await acc1.deposit({value: 100});
+
+    await expectThrow(acc1.sendToFriend(acc2.address, 10));
+    await acc1.addFriendWithAnyConnection(acc2.address);
+    await expectThrow(acc1.sendToFriend(acc2.address, 10));
+    await acc2.addFriendWithAnyConnection(acc1.address);
+
+    assert.equal(web3.eth.getBalance(acc1.address), 100);
+    assert.equal(web3.eth.getBalance(acc2.address), 0);
+    await acc1.sendToFriend(acc2.address, 10);
+    assert.equal(web3.eth.getBalance(acc1.address), 90);
+    assert.equal(web3.eth.getBalance(acc2.address), 10);
+  });
+
+  it("disallows transfers to cancelled friends", async () => {
+    let acc1 = await SocialAccount.new("Name1");
+    let acc2 = await SocialAccount.new("Name2");
+    await acc1.deposit({value: 100});
+    await acc1.addFriendWithAnyConnection(acc2.address);
+    await acc2.addFriendWithAnyConnection(acc1.address);
+
+    await acc1.sendToFriend(acc2.address, 20);
+    await acc2.sendToFriend(acc1.address, 10);
+
+    await acc2.removeFriend(acc1.address);
+
+    await expectThrow(acc1.sendToFriend(acc2.address, 2));
+    await expectThrow(acc2.sendToFriend(acc1.address, 1));
+  });
 });
 
 // https://github.com/OpenZeppelin/zeppelin-solidity/blob/master/test/helpers/expectThrow.js
