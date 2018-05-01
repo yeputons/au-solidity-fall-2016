@@ -151,9 +151,18 @@ contract("SocialAccount", async (accounts) => {
 
     assert.equal(web3.eth.getBalance(acc1.address), 100);
     assert.equal(web3.eth.getBalance(acc2.address), 0);
-    await acc1.sendToFriend(acc2.address, 10);
+    let res = await acc1.sendToFriend(acc2.address, 10);
     assert.equal(web3.eth.getBalance(acc1.address), 90);
     assert.equal(web3.eth.getBalance(acc2.address), 10);
+
+    assert.web3Event(res, {
+      event: "EtherSent",
+      args: {
+        from: acc1.address,
+        to: acc2.address,
+        value: 10
+      }
+    });
   });
 
   it("disallows transfers to cancelled friends", async () => {
