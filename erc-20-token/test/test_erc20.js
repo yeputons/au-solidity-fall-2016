@@ -3,7 +3,7 @@ const Moycoin = artifacts.require("Moycoin");
 contract("Moycoin", async (accounts) => {
   let coin;
 
-  before(async () => {
+  beforeEach(async () => {
     coin = await Moycoin.new(123456);
   });
 
