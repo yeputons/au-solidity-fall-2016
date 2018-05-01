@@ -1,4 +1,5 @@
 const Moycoin = artifacts.require("Moycoin");
+import expectThrow from "openzeppelin-solidity/test/helpers/expectThrow.js";
 
 contract("Moycoin", async (accounts) => {
   let coin;
@@ -55,6 +56,18 @@ contract("Moycoin", async (accounts) => {
       event: "Transfer",
       args: {from: accounts[1], to: accounts[2], value: 10}
     });
+  });
+
+  it("prohibits transfer leading to negative balance", async () => {
+    await expectThrow(coin.transfer(accounts[1], 123457));
+    await expectThrow(coin.transfer(accounts[0], 1, {from: accounts[1]}));
+
+    await coin.transfer(accounts[1], 10);
+    await expectThrow(coin.transfer(accounts[1], 123447));
+    await expectThrow(coin.transfer(accounts[0], 11, {from: accounts[1]}));
+
+    await coin.transfer(accounts[0], 10, {from: accounts[1]});
+    await coin.transfer(accounts[1], 123456);
   });
 });
 
