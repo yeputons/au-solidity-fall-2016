@@ -14,5 +14,11 @@
   "license": "ISC",
   "dependencies": {
     "openzeppelin-solidity": "1.9.0"
+  },
+  "devDependencies": {
+    "babel-polyfill": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "babel-register": "^6.26.0",
+    "web3": "^0.20.6"
   }
 }
