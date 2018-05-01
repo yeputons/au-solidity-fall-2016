@@ -31,7 +31,7 @@ contract Moycoin is DetailedERC20("Moycoin", "MOY", 1) {
     function transferFrom(address from, address to, uint256 value) public returns (bool success) {
         require(allowances[from][msg.sender] >= value);
         require(balances[from] >= value);
-        allowances[msg.sender][from] -= value;
+        allowances[from][msg.sender] -= value;
         balances[from] -= value;
         balances[to] += value;  // No overflow as totalSupply fits in uint256
         emit Transfer(from, to, value);
