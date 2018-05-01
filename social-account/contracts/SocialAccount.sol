@@ -7,6 +7,8 @@ contract SocialAccount {
     address public owner;
 
     event NameChanged(SocialAccount indexed account, string oldName, string newName);
+    event Deposited(SocialAccount indexed account, address indexed from, uint256 value);
+    event Withdrawn(SocialAccount indexed account, address indexed to, uint256 value);
 
     // Stores following connections:
     // 1. Initiated by me (owns such connections)
@@ -23,6 +25,25 @@ contract SocialAccount {
         require(msg.sender == owner);
         emit NameChanged(this, name, _name);
         name = _name;
+    }
+
+    function deposit() public payable {
+        // As it's possible for anyone to send ETH via mining without any checks,
+        // we do not put any checks here as well.
+        emit Deposited(this, msg.sender, msg.value);
+    }
+
+    function withdraw(uint256 value) public {
+        require(msg.sender == owner);
+        owner.transfer(value);
+        emit Withdrawn(this, owner, value);
+    }
+
+    function sendToFriend(SocialAccount other, uint256 value) public {
+        require(msg.sender == owner);
+        SocialConnection conn = getFriendConnection(other);
+        require(conn.status() == SocialConnection.Status.ACCEPTED);
+        address(other).transfer(value);
     }
 
     // `connection` is zero if we want to create a new `SocialConnection`
