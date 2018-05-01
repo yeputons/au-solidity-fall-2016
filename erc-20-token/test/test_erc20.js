@@ -129,6 +129,39 @@ contract("Moycoin", async (accounts) => {
       args: {from: accounts[0], to: accounts[3], value: 60}
     });
   });
+
+  it("disallows transferFrom when allowance is depleted", async () => {
+    await coin.approve(accounts[1], 100);
+    await coin.transferFrom(accounts[0], accounts[2], 30, {from: accounts[1]});
+    await expectThrow(coin.transferFrom(accounts[2], accounts[0], 1, {from: accounts[2]}));
+    await expectThrow(coin.transferFrom(accounts[2], accounts[0], 1, {from: accounts[1]}));
+    await expectThrow(coin.transferFrom(accounts[2], accounts[0], 1, {from: accounts[0]}));
+    await expectThrow(coin.transferFrom(accounts[0], accounts[3], 80, {from: accounts[1]}));
+    await coin.transferFrom(accounts[0], accounts[3], 70, {from: accounts[1]});
+    assert.equal(await coin.balanceOf.call(accounts[0]), 123356);
+    assert.equal(await coin.balanceOf.call(accounts[1]), 0);
+    assert.equal(await coin.balanceOf.call(accounts[2]), 30);
+    assert.equal(await coin.balanceOf.call(accounts[3]), 70);
+    assert.equal(await coin.allowance.call(accounts[0], accounts[1]), 0);
+  });
+
+  it("disallows transferFrom when there are not enough funds", async () => {
+    await coin.transfer(accounts[1], 100);
+    await coin.approve(accounts[2], 200, {from: accounts[1]});
+
+    await coin.transferFrom(accounts[1], accounts[3], 90, {from: accounts[2]});
+
+    await expectThrow(coin.transferFrom(accounts[1], accounts[3], 15, {from: accounts[2]}));
+    assert.equal(await coin.allowance.call(accounts[1], accounts[2]), 110);
+
+    await coin.transferFrom(accounts[1], accounts[3], 10, {from: accounts[2]});
+    assert.equal(await coin.allowance.call(accounts[1], accounts[2]), 100);
+
+    assert.equal(await coin.balanceOf.call(accounts[0]), 123356);
+    assert.equal(await coin.balanceOf.call(accounts[1]), 0);
+    assert.equal(await coin.balanceOf.call(accounts[2]), 0);
+    assert.equal(await coin.balanceOf.call(accounts[3]), 100);
+  });
 });
 
 const assertEqualEvent = function(haystack, needle) {
