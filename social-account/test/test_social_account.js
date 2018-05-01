@@ -83,6 +83,61 @@ contract("SocialAccount", async (accounts) => {
       assert.equal(await conn.status.call(), CANCELLED);
     });
   });
+
+  it("accepts deposits from anybody", async () => {
+    const acc = await SocialAccount.new("Name");
+    const res1 = await acc.deposit({value: 100});
+    const res2 = await acc.deposit({value: 50, from: accounts[1]});
+    assert.equal(await web3.eth.getBalance(acc.address), 150);
+    assert.web3Event(res1, {
+      event: "Deposited",
+      args: {
+        account: acc.address,
+        from: accounts[0],
+        value: 100
+      }
+    });
+    assert.web3Event(res2, {
+      event: "Deposited",
+      args: {
+        account: acc.address,
+        from: accounts[1],
+        value: 50
+      }
+    });
+  });
+
+  it("allows owner to withdraw ether", async () => {
+    const acc = await SocialAccount.new("Name");
+    await acc.deposit({value: 50, from: accounts[1]});
+
+    {
+      const balanceBefore = await web3.eth.getBalance(accounts[0]);
+      const rx = await acc.withdraw(40, {gasPrice: 0});
+      assert.equal(await web3.eth.getBalance(acc.address), 10);
+
+      const balanceAfter = await web3.eth.getBalance(accounts[0]);
+      assert.equal(balanceAfter.sub(balanceBefore), 40);
+    }
+
+    await expectThrow(acc.withdraw(40));
+
+    {
+      const balanceBefore = await web3.eth.getBalance(accounts[0]);
+      await acc.withdraw(10, {gasPrice: 0});
+      assert.equal(await web3.eth.getBalance(acc.address), 0);
+
+      const balanceAfter = await web3.eth.getBalance(accounts[0]);
+      assert.equal(balanceAfter.sub(balanceBefore), 10);
+    }
+  });
+
+  it("prohibits others from withdrawing", async () => {
+    const acc = await SocialAccount.new("Name");
+    await acc.deposit({value: 50, from: accounts[1]});
+
+    await expectThrow(acc.withdraw(40, {from: accounts[1]}));
+  });
 });
 
 // https://github.com/OpenZeppelin/zeppelin-solidity/blob/master/test/helpers/expectThrow.js
