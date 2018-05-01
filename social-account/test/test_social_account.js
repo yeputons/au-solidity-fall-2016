@@ -83,6 +83,103 @@ contract("SocialAccount", async (accounts) => {
       assert.equal(await conn.status.call(), CANCELLED);
     });
   });
+
+  it("accepts deposits from anybody", async () => {
+    const acc = await SocialAccount.new("Name");
+    const res1 = await acc.deposit({value: 100});
+    const res2 = await acc.deposit({value: 50, from: accounts[1]});
+    assert.equal(await web3.eth.getBalance(acc.address), 150);
+    assert.web3Event(res1, {
+      event: "Deposited",
+      args: {
+        account: acc.address,
+        from: accounts[0],
+        value: 100
+      }
+    });
+    assert.web3Event(res2, {
+      event: "Deposited",
+      args: {
+        account: acc.address,
+        from: accounts[1],
+        value: 50
+      }
+    });
+  });
+
+  it("allows owner to withdraw ether", async () => {
+    const acc = await SocialAccount.new("Name");
+    await acc.deposit({value: 50, from: accounts[1]});
+
+    {
+      const balanceBefore = await web3.eth.getBalance(accounts[0]);
+      const rx = await acc.withdraw(40, {gasPrice: 0});
+      assert.equal(await web3.eth.getBalance(acc.address), 10);
+
+      const balanceAfter = await web3.eth.getBalance(accounts[0]);
+      assert.equal(balanceAfter.sub(balanceBefore), 40);
+    }
+
+    await expectThrow(acc.withdraw(40));
+
+    {
+      const balanceBefore = await web3.eth.getBalance(accounts[0]);
+      await acc.withdraw(10, {gasPrice: 0});
+      assert.equal(await web3.eth.getBalance(acc.address), 0);
+
+      const balanceAfter = await web3.eth.getBalance(accounts[0]);
+      assert.equal(balanceAfter.sub(balanceBefore), 10);
+    }
+  });
+
+  it("prohibits others from withdrawing", async () => {
+    const acc = await SocialAccount.new("Name");
+    await acc.deposit({value: 50, from: accounts[1]});
+
+    await expectThrow(acc.withdraw(40, {from: accounts[1]}));
+  });
+
+  it("allows transfers to friends only", async () => {
+    let acc1 = await SocialAccount.new("Name1");
+    let acc2 = await SocialAccount.new("Name2");
+    await acc1.deposit({value: 100});
+
+    await expectThrow(acc1.sendToFriend(acc2.address, 10));
+    await acc1.addFriendWithAnyConnection(acc2.address);
+    await expectThrow(acc1.sendToFriend(acc2.address, 10));
+    await acc2.addFriendWithAnyConnection(acc1.address);
+
+    assert.equal(web3.eth.getBalance(acc1.address), 100);
+    assert.equal(web3.eth.getBalance(acc2.address), 0);
+    let res = await acc1.sendToFriend(acc2.address, 10);
+    assert.equal(web3.eth.getBalance(acc1.address), 90);
+    assert.equal(web3.eth.getBalance(acc2.address), 10);
+
+    assert.web3Event(res, {
+      event: "EtherSent",
+      args: {
+        from: acc1.address,
+        to: acc2.address,
+        value: 10
+      }
+    });
+  });
+
+  it("disallows transfers to cancelled friends", async () => {
+    let acc1 = await SocialAccount.new("Name1");
+    let acc2 = await SocialAccount.new("Name2");
+    await acc1.deposit({value: 100});
+    await acc1.addFriendWithAnyConnection(acc2.address);
+    await acc2.addFriendWithAnyConnection(acc1.address);
+
+    await acc1.sendToFriend(acc2.address, 20);
+    await acc2.sendToFriend(acc1.address, 10);
+
+    await acc2.removeFriend(acc1.address);
+
+    await expectThrow(acc1.sendToFriend(acc2.address, 2));
+    await expectThrow(acc2.sendToFriend(acc1.address, 1));
+  });
 });
 
 // https://github.com/OpenZeppelin/zeppelin-solidity/blob/master/test/helpers/expectThrow.js
