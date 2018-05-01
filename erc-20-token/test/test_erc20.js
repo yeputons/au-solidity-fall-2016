@@ -29,4 +29,38 @@ contract("Moycoin", async (accounts) => {
     assert.equal(await coin.balanceOf.call(accounts[2]), 0);
     assert.equal(await coin.balanceOf.call(0), 0);
   });
+
+  it("allows owner to transfers tokens", async () => {
+    const res1 = await coin.transfer(accounts[1], 100);
+    const res2 = await coin.transfer(accounts[2], 1000);
+    const res3 = await coin.transfer(accounts[2], 10, {from: accounts[1]});
+    assert.equal(await coin.balanceOf.call(accounts[0]), 122356);
+    assert.equal(await coin.balanceOf.call(accounts[1]), 90);
+    assert.equal(await coin.balanceOf.call(accounts[2]), 1010);
+
+    assert.equal(res1.logs.length, 1);
+    assertEqualEvent(res1.logs[0], {
+      event: "Transfer",
+      args: {from: accounts[0], to: accounts[1], value: 100}
+    });
+
+    assert.equal(res2.logs.length, 1);
+    assertEqualEvent(res2.logs[0], {
+      event: "Transfer",
+      args: {from: accounts[0], to: accounts[2], value: 1000}
+    });
+
+    assert.equal(res3.logs.length, 1);
+    assertEqualEvent(res3.logs[0], {
+      event: "Transfer",
+      args: {from: accounts[1], to: accounts[2], value: 10}
+    });
+  });
 });
+
+const assertEqualEvent = function(haystack, needle) {
+  assert.equal(haystack.event, needle.event);
+  for (var key in Object.keys(haystack.args).concat(Object.keys(needle.args))) {
+    assert.equal(haystack.args[key], needle.args[key]);
+  }
+}
