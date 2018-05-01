@@ -9,6 +9,7 @@ contract SocialAccount {
     event NameChanged(SocialAccount indexed account, string oldName, string newName);
     event Deposited(SocialAccount indexed account, address indexed from, uint256 value);
     event Withdrawn(SocialAccount indexed account, address indexed to, uint256 value);
+    event EtherSent(SocialAccount indexed from, SocialAccount indexed to, uint256 value);
 
     // Stores following connections:
     // 1. Initiated by me (owns such connections)
@@ -44,6 +45,7 @@ contract SocialAccount {
         SocialConnection conn = getFriendConnection(other);
         require(conn.status() == SocialConnection.Status.ACCEPTED);
         other.deposit.value(value)();  // Potential vulnerability: transaction may run out of gas
+        emit EtherSent(this, other, value);
     }
 
     // `connection` is zero if we want to create a new `SocialConnection`
