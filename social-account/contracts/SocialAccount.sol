@@ -43,7 +43,7 @@ contract SocialAccount {
         require(msg.sender == owner);
         SocialConnection conn = getFriendConnection(other);
         require(conn.status() == SocialConnection.Status.ACCEPTED);
-        address(other).transfer(value);
+        other.deposit.value(value)();  // Potential vulnerability: transaction may run out of gas
     }
 
     // `connection` is zero if we want to create a new `SocialConnection`
