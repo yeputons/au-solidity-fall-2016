@@ -30,11 +30,8 @@ contract SocialAccount {
     // what `SocialConnection` they accept and can check its code.
     function addFriend(SocialAccount other, SocialConnection connection) public {
         require(msg.sender == owner);
-        if (connections[other] != SocialConnection(0) && connections[other].status() == SocialConnection.Status.CANCELLED) {
-            delete connections[other];
-        }
         // There is neither pending request, nor accepted request.
-        require(connections[other] == SocialConnection(0));
+        require(getFriendConnection(other) == SocialConnection(0));
         if (connection == SocialConnection(0)) {
             connections[other] = new SocialConnection(other);
         } else {
@@ -44,6 +41,13 @@ contract SocialAccount {
             connections[other] = connection;
             connection.accept();
         }
+    }
+
+    function getFriendConnection(SocialAccount other) internal returns (SocialConnection) {
+        if (connections[other] != SocialConnection(0) && connections[other].status() == SocialConnection.Status.CANCELLED) {
+            delete connections[other];
+        }
+        return connections[other];
     }
 
     // Unsafe as it doesn't check type of the proposed `SocialConnection`.
